@@ -61,8 +61,8 @@ export default function ScalableDashboard() {
   const [filter, setFilter] = useState({
     rating: '',
     category: '',
-    startDate: '',
-    endDate: '',
+    channel: '',
+    time: '',
     city: '',
     roomType: '',
     priceMin: '',
@@ -132,6 +132,56 @@ export default function ScalableDashboard() {
       filtered = filtered.filter((property: any) => {
         const avg = getAverageRating(property.id, property.name);
         return avg && Number(avg) >= Number(filter.rating);
+      });
+    }
+    
+    // Category filter - filter by review categories
+    if (filter.category) {
+      filtered = filtered.filter((property: any) => {
+        const propertyReviews = allReviews.filter((r: any) => r.property === property.name);
+        return propertyReviews.some((review: any) => 
+          review.reviewCategory?.some((cat: any) => cat.category === filter.category)
+        );
+      });
+    }
+    
+    // Channel filter - filter by review channels
+    if (filter.channel) {
+      filtered = filtered.filter((property: any) => {
+        const propertyReviews = allReviews.filter((r: any) => r.property === property.name);
+        return propertyReviews.some((review: any) => review.channel === filter.channel);
+      });
+    }
+    
+    // Time filter - filter by review dates
+    if (filter.time) {
+      filtered = filtered.filter((property: any) => {
+        const propertyReviews = allReviews.filter((r: any) => r.property === property.name);
+        const now = new Date();
+        let cutoffDate = new Date();
+        
+        switch (filter.time) {
+          case 'last_week':
+            cutoffDate.setDate(now.getDate() - 7);
+            break;
+          case 'last_month':
+            cutoffDate.setMonth(now.getMonth() - 1);
+            break;
+          case 'last_3_months':
+            cutoffDate.setMonth(now.getMonth() - 3);
+            break;
+          case 'last_6_months':
+            cutoffDate.setMonth(now.getMonth() - 6);
+            break;
+          case 'last_year':
+            cutoffDate.setFullYear(now.getFullYear() - 1);
+            break;
+        }
+        
+        return propertyReviews.some((review: any) => {
+          const reviewDate = new Date(review.date);
+          return reviewDate >= cutoffDate;
+        });
       });
     }
     
@@ -261,8 +311,8 @@ export default function ScalableDashboard() {
     setFilter({
       rating: '',
       category: '',
-      startDate: '',
-      endDate: '',
+      channel: '',
+      time: '',
       city: '',
       roomType: '',
       priceMin: '',
@@ -346,7 +396,12 @@ export default function ScalableDashboard() {
                 />
               </>
             )}
-            {activeView === 'overview' && <AnalyticsView reviews={allReviews.length > 0 ? allReviews : undefined} isLoading={reviewsLoading} />}
+            {activeView === 'overview' && (
+              <>
+                <Filters filter={filter} setFilter={setFilter} clearFilters={clearFilters} />
+                <AnalyticsView reviews={allReviews.length > 0 ? allReviews : undefined} isLoading={reviewsLoading} />
+              </>
+            )}
           </div>
         </div>
       </div>

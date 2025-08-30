@@ -21,7 +21,7 @@ export default function Filters({ filter, setFilter, clearFilters }: FiltersProp
           Clear all
         </button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <select 
           className="px-2 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
           value={filter.rating} 
@@ -32,36 +32,45 @@ export default function Filters({ filter, setFilter, clearFilters }: FiltersProp
           <option value="9">9+</option>
           <option value="10">10</option>
         </select>
-        <input
-          placeholder="City"
-          className="px-2 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
-          value={filter.city}
-          onChange={e => setFilter((f: any) => ({ ...f, city: e.target.value }))}
-        />
         <select 
           className="px-2 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
-          value={filter.roomType} 
-          onChange={e => setFilter((f: any) => ({ ...f, roomType: e.target.value }))}
+          value={filter.category} 
+          onChange={e => setFilter((f: any) => ({ ...f, category: e.target.value }))}
         >
-          <option value="">Room Type</option>
-          <option value="entire_home">Entire Home</option>
-          <option value="private_room">Private Room</option>
-          <option value="shared_room">Shared Room</option>
+          <option value="">Category</option>
+          <option value="cleanliness">Cleanliness</option>
+          <option value="communication">Communication</option>
+          <option value="check_in">Check-in</option>
+          <option value="accuracy">Accuracy</option>
+          <option value="location">Location</option>
+          <option value="value">Value</option>
+          <option value="respect_house_rules">Respect House Rules</option>
         </select>
-        <input
-          placeholder="Min £"
-          type="number"
+        <select 
           className="px-2 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
-          value={filter.priceMin}
-          onChange={e => setFilter((f: any) => ({ ...f, priceMin: e.target.value }))}
-        />
-        <input
-          placeholder="Max £"
-          type="number"
+          value={filter.channel} 
+          onChange={e => setFilter((f: any) => ({ ...f, channel: e.target.value }))}
+        >
+          <option value="">Channel</option>
+          <option value="Airbnb">Airbnb</option>
+          <option value="Booking.com">Booking.com</option>
+          <option value="VRBO">VRBO</option>
+          <option value="Expedia">Expedia</option>
+          <option value="Direct">Direct</option>
+          <option value="TripAdvisor">TripAdvisor</option>
+        </select>
+        <select 
           className="px-2 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
-          value={filter.priceMax}
-          onChange={e => setFilter((f: any) => ({ ...f, priceMax: e.target.value }))}
-        />
+          value={filter.time} 
+          onChange={e => setFilter((f: any) => ({ ...f, time: e.target.value }))}
+        >
+          <option value="">Time Period</option>
+          <option value="last_week">Last Week</option>
+          <option value="last_month">Last Month</option>
+          <option value="last_3_months">Last 3 Months</option>
+          <option value="last_6_months">Last 6 Months</option>
+          <option value="last_year">Last Year</option>
+        </select>
       </div>
     </div>
   );
