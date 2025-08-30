@@ -40,10 +40,10 @@ export function useGoogleReviews({ placeId, propertyId, enabled = true }: UseGoo
   });
 }
 
-export function useGoogleReviewsSearch() {
+export function useGoogleReviewsSearch(query: string, location?: { lat: number; lng: number }) {
   return useQuery({
-    queryKey: ['google-reviews-search'],
-    queryFn: async ({ query, location }: { query: string; location?: { lat: number; lng: number } }) => {
+    queryKey: ['google-reviews-search', query, location],
+    queryFn: async () => {
       const response = await fetch('/api/google-reviews', {
         method: 'POST',
         headers: {

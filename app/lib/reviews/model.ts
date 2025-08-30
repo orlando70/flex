@@ -22,7 +22,7 @@ const reviewStateSchema = new mongoose.Schema({
 // Indexes for performance
 reviewStateSchema.index({ hostaway_review_id: 1, is_hidden: 1 });
 
-export const Review = mongoose.models.ReviewState || mongoose.model('ReviewState', reviewStateSchema);
+export const Review = mongoose.model('ReviewState', reviewStateSchema);
 
 
 export async function connectMongo() {

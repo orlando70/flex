@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "lint:check": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 50",
+    "lint:relaxed": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 100",
+    "lint:strict": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 0",
+    "lint:report": "eslint . --ext .js,.jsx,.ts,.tsx --format=compact --output-file=eslint-report.txt"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^1.16.10",
