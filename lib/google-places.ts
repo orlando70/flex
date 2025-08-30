@@ -1,4 +1,4 @@
-import axios from 'axios';
+
 
 export interface GoogleReview {
   author_name: string;
@@ -29,6 +29,12 @@ export interface GooglePlaceDetails {
 export interface GooglePlacesResponse {
   status: string;
   result: GooglePlaceDetails;
+  error_message?: string;
+}
+
+export interface GooglePlacesSearchResponse {
+  status: string;
+  results: any[];
   error_message?: string;
 }
 
@@ -63,21 +69,15 @@ class GooglePlacesService {
     }
 
     try {
-      const response = await axios.get<GooglePlacesResponse>(
-        `${this.baseUrl}/details/json`,
-        {
-          params: {
-            place_id: placeId,
-            fields: 'place_id,name,reviews,rating,user_ratings_total,formatted_address,geometry',
-            key: this.apiKey,
-          },
-        }
+      const response = await fetch(
+        `${this.baseUrl}/details/json?place_id=${placeId}&fields=place_id,name,reviews,rating,user_ratings_total,formatted_address,geometry&key=${this.apiKey}`
       );
+      const data: GooglePlacesResponse = await response.json();
 
-      if (response.data.status === 'OK') {
-        return response.data.result;
+      if (data.status === 'OK') {
+        return data.result;
       } else {
-        console.error('Google Places API error:', response.data.status, response.data.error_message);
+        console.error('Google Places API error:', data.status, data.error_message);
         return null;
       }
     } catch (error) {
@@ -110,17 +110,17 @@ class GooglePlacesService {
         key: this.apiKey,
       };
 
-      const nearbyResponse = await axios.get(
-        `${this.baseUrl}/nearbysearch/json`,
-        { params: nearbyParams }
+      const nearbyResponse = await fetch(
+        `${this.baseUrl}/nearbysearch/json?${new URLSearchParams(nearbyParams).toString()}`
       );
+      const nearbyData: GooglePlacesSearchResponse = await nearbyResponse.json();
 
 
-      if (nearbyResponse.data.status === 'OK' && nearbyResponse.data.results.length > 0) {
+      if (nearbyData.status === 'OK' && nearbyData.results.length > 0) {
         
         // If we have property name, try to match it with nearby results
         if (propertyName) {
-          const matchingPlace = nearbyResponse.data.results.find((place: any) =>
+          const matchingPlace = nearbyData.results.find((place: any) =>
             place.name.toLowerCase().includes(propertyName.toLowerCase()) ||
             propertyName.toLowerCase().includes(place.name.toLowerCase())
           );
@@ -131,7 +131,7 @@ class GooglePlacesService {
         }
 
         // Return the closest place if no name match found
-        return nearbyResponse.data.results[0].place_id;
+        return nearbyData.results[0].place_id;
       }
 
       // If nearby search fails, try text search with coordinates as bias
@@ -144,14 +144,14 @@ class GooglePlacesService {
           key: this.apiKey,
         };
 
-        const textResponse = await axios.get(
-          `${this.baseUrl}/textsearch/json`,
-          { params: textSearchParams }
+        const textResponse = await fetch(
+          `${this.baseUrl}/textsearch/json?${new URLSearchParams(textSearchParams).toString()}`
         );
+        const textData: GooglePlacesSearchResponse = await textResponse.json();
 
 
-        if (textResponse.data.status === 'OK' && textResponse.data.results.length > 0) {
-          return textResponse.data.results[0].place_id;
+        if (textData.status === 'OK' && textData.results.length > 0) {
+          return textData.results[0].place_id;
         }
       }
 
@@ -183,15 +183,15 @@ class GooglePlacesService {
         params.radius = 5000; // 5km radius
       }
 
-      const response = await axios.get(
-        `${this.baseUrl}/textsearch/json`,
-        { params }
+      const response = await fetch(
+        `${this.baseUrl}/textsearch/json?${new URLSearchParams(params).toString()}`
       );
+      const searchData: GooglePlacesSearchResponse = await response.json();
 
-      if (response.data.status === 'OK' && response.data.results.length > 0) {
-        return response.data.results[0].place_id;
+      if (searchData.status === 'OK' && searchData.results.length > 0) {
+        return searchData.results[0].place_id;
       } else {
-        console.error('Google Places search error:', response.data.status);
+        console.error('Google Places search error:', searchData.status);
         return null;
       }
     } catch (error) {
