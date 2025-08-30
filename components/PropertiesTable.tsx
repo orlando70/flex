@@ -1,4 +1,5 @@
-import { Star } from 'lucide-react';
+import { Star, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 interface PropertiesTableProps {
   properties: any[];
@@ -53,12 +54,21 @@ export default function PropertiesTable({ properties, getAverageRating, getRevie
                   {getReviewCount(property.id, property.name)}
                 </td>
                 <td className="py-3 px-4">
-                  <button 
-                    onClick={() => setSelectedProperty(selectedProperty === property.id ? null : property.id)}
-                    className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
-                  >
-                    {selectedProperty === property.id ? 'Hide Reviews' : 'View Reviews'}
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      onClick={() => setSelectedProperty(selectedProperty === property.id ? null : property.id)}
+                      className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors text-left"
+                    >
+                      {selectedProperty === property.id ? 'Hide Reviews' : 'View Reviews'}
+                    </button>
+                    <Link 
+                      href={`/property/${property.id}`}
+                      className="inline-flex items-center gap-1 text-gray-700 hover:text-gray-800 text-sm font-medium transition-colors group"
+                    >
+                      View Property
+                      <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-200" />
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}

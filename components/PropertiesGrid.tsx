@@ -1,4 +1,4 @@
-import { Star, Building, Users } from 'lucide-react';
+import { Star, Building, Users, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 interface PropertiesGridProps {
@@ -13,9 +13,8 @@ export default function PropertiesGrid({ properties, getAverageRating, getReview
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
       {properties.map((property: any) => (
-        <Link 
+        <div 
           key={property.id} 
-          href={`/property/${property.id}`}
           className="block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow"
         >
           <div className="p-4">
@@ -41,7 +40,7 @@ export default function PropertiesGrid({ properties, getAverageRating, getReview
               <div className="text-gray-600">{property.bedroomsNumber}br {property.bathroomsNumber}ba</div>
               <div className="font-semibold text-gray-900">£{property.price}/nt</div>
             </div>
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100 mb-4">
               <span className="text-xs text-gray-600">{getReviewCount(property.id, property.name)} reviews</span>
               <button 
                 onClick={(e) => {
@@ -54,8 +53,17 @@ export default function PropertiesGrid({ properties, getAverageRating, getReview
                 View Reviews
               </button>
             </div>
+            
+            {/* Call to Action Button */}
+            <Link 
+              href={`/property/${property.id}`}
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-800 text-sm font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 group border border-gray-200"
+            >
+              View Property
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
+            </Link>
           </div>
-        </Link>
+        </div>
       ))}
     </div>
   );

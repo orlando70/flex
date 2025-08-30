@@ -334,7 +334,7 @@ export default function ScalableDashboard() {
                 />
               </>
             )}
-            {activeView === 'overview' && <AnalyticsView reviews={allReviews.length > 0 ? allReviews : undefined} />}
+            {activeView === 'overview' && <AnalyticsView reviews={allReviews.length > 0 ? allReviews : undefined} isLoading={reviewsLoading} />}
           </div>
         </div>
       </div>

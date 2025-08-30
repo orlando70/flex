@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, BarChart, Bar, PieChart, Pie, Cell, RadialBarChart, RadialBar, AreaChart, Area, ComposedChart, Legend } from 'recharts';
-import { TrendingUp, TrendingDown, Star, Users, Calendar, Filter, Download, RefreshCw, Eye, EyeOff, AlertTriangle, Award, Target, Activity, ChevronDown, Info, MessageSquare } from 'lucide-react';
+import { TrendingUp, TrendingDown, Star, Users, Calendar, Filter, Download, RefreshCw, Eye, EyeOff, AlertTriangle, Award, Target, Activity, ChevronDown, Info, MessageSquare, Loader2 } from 'lucide-react';
 
 // Enhanced Types
 interface ReviewCategory {
@@ -33,48 +33,7 @@ interface Property {
   price: number;
 }
 
-// Advanced Mock Data Generator
-const generateAdvancedMockData = () => {
-  const cities = ['London', 'Manchester', 'Birmingham', 'Glasgow', 'Liverpool', 'Edinburgh', 'Brighton', 'Bristol'];
-  const categories = ['cleanliness', 'communication', 'location', 'value', 'checkin', 'accuracy'];
-  
-  const properties: Property[] = Array.from({ length: 50 }, (_, i) => ({
-    id: i + 1,
-    name: `Property ${i + 1}`,
-    city: cities[Math.floor(Math.random() * cities.length)],
-    roomType: ['entire_home', 'private_room'][Math.floor(Math.random() * 2)],
-    price: Math.floor(Math.random() * 200) + 50
-  }));
 
-  const reviews: Review[] = [];
-  properties.forEach(property => {
-    const numReviews = Math.floor(Math.random() * 20) + 5;
-    for (let i = 0; i < numReviews; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - Math.floor(Math.random() * 365));
-      reviews.push({
-        id: reviews.length + 1,
-        property: property.name,
-        guest: `Guest ${reviews.length + 1}`,
-        comment: 'Sample review text',
-        date: date.toISOString(),
-        rating: Math.floor(Math.random() * 3) + 8,
-        is_hidden: Math.random() > 0.2,
-        reviewCategory: categories.slice(0, 3 + Math.floor(Math.random() * 3)).map(cat => ({
-          category: cat,
-          rating: Math.floor(Math.random() * 3) + 8
-        })),
-        channel: 'Airbnb',
-        hasCategories: true,
-        categoryCount: 3
-      });
-    }
-  });
-
-  return { reviews, properties };
-};
-
-const { reviews: mockReviews, properties: mockProperties } = generateAdvancedMockData();
 
 // Advanced Analytics Functions
 const getTimeSeriesData = (reviews: Review[], period: 'week' | 'month' | 'quarter' = 'month') => {
@@ -194,20 +153,96 @@ const GlassCard = ({ children, className = '' }: any) => (
   <div className={`bg-white rounded-2xl border border-gray-200 shadow ${className}`}>{children}</div>
 );
 
-export default function ModernAnalyticsView({ reviews = mockReviews }: { reviews?: Review[] }) {
+// Loading Component
+const LoadingState = () => (
+  <div className="min-h-screen bg-gray-50 p-6">
+    <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <div className="flex items-center gap-3 mb-6">
+        <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
+        <h1 className="text-2xl font-semibold text-gray-700">Loading Analytics...</h1>
+      </div>
+      <p className="text-gray-500 text-center max-w-md">
+        We're gathering your review data and preparing insightful analytics. This may take a moment.
+      </p>
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-white rounded-2xl p-6 border border-gray-200 animate-pulse">
+            <div className="h-12 bg-gray-200 rounded-xl mb-4"></div>
+            <div className="h-8 bg-gray-200 rounded mb-2"></div>
+            <div className="h-6 bg-gray-200 rounded"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+export default function ModernAnalyticsView({ 
+  reviews = [], 
+  isLoading = false 
+}: { 
+  reviews?: Review[];
+  isLoading?: boolean;
+}) {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter'>('month');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'overview' | 'detailed'>('overview');
   const [showInsights, setShowInsights] = useState(true);
 
-  const timeSeriesData = useMemo(() => getTimeSeriesData(reviews, timeRange), [reviews, timeRange]);
-  const categoryInsights = useMemo(() => getCategoryInsights(reviews), [reviews]);
-  const performanceMetrics = useMemo(() => getPerformanceMetrics(reviews), [reviews]);
+  // Always calculate these values, even if we don't use them
+  const timeSeriesData = useMemo(() => {
+    if (!reviews || reviews.length === 0) return [];
+    return getTimeSeriesData(reviews, timeRange);
+  }, [reviews, timeRange]);
+  
+  const categoryInsights = useMemo(() => {
+    if (!reviews || reviews.length === 0) return [];
+    return getCategoryInsights(reviews);
+  }, [reviews]);
+  
+  const performanceMetrics = useMemo(() => {
+    if (!reviews || reviews.length === 0) {
+      return {
+        totalReviews: 0,
+        avgRating: 0,
+        approvalRate: 0,
+        satisfactionRate: 0,
+        monthlyGrowth: 0,
+        repeatGuestRate: 0
+      };
+    }
+    return getPerformanceMetrics(reviews);
+  }, [reviews]);
 
-  const categoryRadialData = categoryInsights.slice(0, 6).map((cat, index) => ({
-    ...cat,
-    fill: COLORS.primary[index % COLORS.primary.length]
-  }));
+  const categoryRadialData = useMemo(() => {
+    if (!categoryInsights || categoryInsights.length === 0) return [];
+    return categoryInsights.slice(0, 6).map((cat, index) => ({
+      ...cat,
+      fill: COLORS.primary[index % COLORS.primary.length]
+    }));
+  }, [categoryInsights]);
+
+  // Show loading state if data is still loading
+  if (isLoading) {
+    return <LoadingState />;
+  }
+
+  // Show empty state if no reviews
+  if (!reviews || reviews.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h1 className="text-2xl font-semibold text-gray-700 mb-2">No Reviews Available</h1>
+            <p className="text-gray-500 max-w-md">
+              There are no reviews to analyze at the moment. Reviews will appear here once they become available.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
