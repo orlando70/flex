@@ -2,7 +2,6 @@
 
 import { useParams } from 'next/navigation';
 import { useListing } from '@/lib/hooks/listings';
-import Header from "@/app/components/Header";
 import ImageGallery from "@/components/ImageGallery";
 import PropertyInfo from "@/components/PropertyInfo";
 import Amenities from "@/components/Amenities";
@@ -12,6 +11,7 @@ import Footer from "@/components/Footer";
 import PropertyHeader from "@/components/PropertyHeader";
 import PoliciesSection from "@/components/PoliciesSection";
 import Reviews from "@/components/Reviews";
+import Header from '@/components/PageHeader';
 
 export default function PropertyPage() {
   const params = useParams();
