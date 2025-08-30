@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     });
     const filteredReviews = includeHidden
       ? normalizedReviews
-      : normalizedReviews.filter(review => !review.is_hidden);
+      : normalizedReviews.filter((review: any) => !review.is_hidden);
     return {
       status: hostawayResponse.status,
       result: filteredReviews,
