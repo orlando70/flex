@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { Review, connectMongo } from '../../lib/reviews/model';
-import { normalizeReview } from '@/app/lib/reviews/utils';
+import { Review, connectMongo } from '../../../lib/reviews/model';
+import { normalizeReview } from '@/lib/reviews/utils';
 // import { normalizeHostawayResponse } from '../../lib/reviews/utils';
 
 export async function GET(request: NextRequest) {
