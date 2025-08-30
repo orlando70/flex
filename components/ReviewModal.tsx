@@ -18,7 +18,37 @@ interface ReviewModalProps {
 }
 
 export default function ReviewModal({ selectedProperty, setSelectedProperty, listingsData, propertyReviews, paginatedReviews, reviewSearch, setReviewSearch, reviewPage, setReviewPage, totalReviewPages, reviewPageSize }: ReviewModalProps) {
-  const patchReviewMutation = usePatchReview();
+  const queryClient = useQueryClient();
+  const [pendingReviewId, setPendingReviewId] = useState<number | null>(null);
+  const { mutate: patchReview, isPending } = usePatchReview({
+    onMutate: async (newReviewData) => {
+      setPendingReviewId(newReviewData.hostaway_review_id);
+      await queryClient.cancelQueries({ queryKey: ['reviews'] });
+      const previousReviews = queryClient.getQueryData(['reviews']);
+      queryClient.setQueryData(['reviews'], (old: any) => {
+        if (!old) return old;
+        const updatedResult = old.result.map((review: any) =>
+          review.id === newReviewData.hostaway_review_id
+            ? { ...review, is_hidden: newReviewData.is_hidden }
+            : review
+        );
+        return { ...old, result: updatedResult };
+      });
+      return { previousReviews };
+    },
+    onSuccess: () => {
+      setPendingReviewId(null);
+      queryClient.invalidateQueries({ queryKey: ['reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+    },
+    onError: (err, newReviewData, context) => {
+      setPendingReviewId(null);
+      if (context?.previousReviews) {
+        queryClient.setQueryData(['reviews'], context.previousReviews);
+      }
+      console.error("Failed to update review:", err);
+    },
+  });
   const [showHiddenReviews, setShowHiddenReviews] = useState(true);
 
   if (!selectedProperty) return null;
@@ -152,22 +182,35 @@ export default function ReviewModal({ selectedProperty, setSelectedProperty, lis
                         {review.is_hidden ? 'Hidden' : 'Visible'}
                       </label>
                       <button
-                        onClick={() => patchReviewMutation.mutate({ 
+                        onClick={() => patchReview({ 
                           hostaway_review_id: review.id, 
                           is_hidden: !review.is_hidden 
                         })}
-                        disabled={patchReviewMutation.isPending}
+                        disabled={isPending && pendingReviewId === review.id}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
                           review.is_hidden 
                             ? 'bg-gray-300' 
                             : 'bg-green-500'
-                        } ${patchReviewMutation.isPending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        } ${isPending && pendingReviewId === review.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                       >
                         <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          className={`inline-flex items-center justify-center h-4 w-4 rounded-full bg-white transition-transform ${
                             review.is_hidden ? 'translate-x-1' : 'translate-x-6'
                           }`}
-                        />
+                        >
+                          {isPending && pendingReviewId === review.id ? (
+                            <svg className="animate-spin h-3 w-3 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          ) : (
+                            <span
+                              className={`h-4 w-4 rounded-full bg-white transform ${
+                                review.is_hidden ? 'translate-x-1' : 'translate-x-6'
+                              }`}
+                            />
+                          )}
+                        </span>
                       </button>
                       <span className="text-xs text-gray-500">
                         {review.is_hidden ? 'Click to show' : 'Click to hide'}

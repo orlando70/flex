@@ -45,7 +45,7 @@ interface PatchReviewArgs {
   is_hidden: boolean;
 }
 
-export function usePatchReview() {
+export function usePatchReview(options?: UseMutationOptions<any, Error, PatchReviewArgs, any>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ hostaway_review_id, is_hidden }: PatchReviewArgs) => {
@@ -57,9 +57,17 @@ export function usePatchReview() {
       if (!res.ok) throw new Error('Failed to update review status');
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['reviews', 'all'] });
       queryClient.invalidateQueries({ queryKey: ['listings'] });
-    }
+      options?.onSuccess?.(data, variables, context);
+    },
+    onError: (error, variables, context) => {
+      options?.onError?.(error, variables, context);
+    },
+    onMutate: (variables) => {
+      return options?.onMutate?.(variables);
+    },
+    ...options,
   });
 }

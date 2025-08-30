@@ -1,11 +1,8 @@
-import { Grid, List, ArrowUpDown } from 'lucide-react';
+import { Grid, List } from 'lucide-react';
 
 interface ToolbarProps {
   viewMode: 'grid' | 'table';
   setViewMode: (mode: 'grid' | 'table') => void;
-  sortBy: string;
-  sortOrder: string;
-  handleSort: (field: string) => void;
   pageSize: number;
   setPageSize: (size: number) => void;
   currentPage: number;
@@ -13,7 +10,7 @@ interface ToolbarProps {
   filteredLength: number;
 }
 
-export default function Toolbar({ viewMode, setViewMode, sortBy, sortOrder, handleSort, pageSize, setPageSize, currentPage, setCurrentPage, filteredLength }: ToolbarProps) {
+export default function Toolbar({ viewMode, setViewMode, pageSize, setPageSize, currentPage, setCurrentPage, filteredLength }: ToolbarProps) {
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-4">
@@ -29,45 +26,6 @@ export default function Toolbar({ viewMode, setViewMode, sortBy, sortOrder, hand
             className={`p-2 rounded-md transition-colors ${viewMode === 'table' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}`}
           >
             <List className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">Sort by:</span>
-          <button
-            onClick={() => handleSort('name')}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              sortBy === 'name' ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Name
-            <ArrowUpDown className="w-3 h-3" />
-          </button>
-          <button
-            onClick={() => handleSort('rating')}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              sortBy === 'rating' ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Rating
-            <ArrowUpDown className="w-3 h-3" />
-          </button>
-          <button
-            onClick={() => handleSort('reviews')}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              sortBy === 'reviews' ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Reviews
-            <ArrowUpDown className="w-3 h-3" />
-          </button>
-          <button
-            onClick={() => handleSort('price')}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              sortBy === 'price' ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Price
-            <ArrowUpDown className="w-3 h-3" />
           </button>
         </div>
       </div>

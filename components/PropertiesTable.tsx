@@ -57,12 +57,14 @@ export default function PropertiesTable({ properties, getAverageRating, getRevie
                   <div className="flex flex-col gap-2">
                     <button 
                       onClick={() => setSelectedProperty(selectedProperty === property.id ? null : property.id)}
-                      className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors text-left"
+                      className="text-purple-600 cursor-pointer hover:text-purple-700 text-sm font-medium transition-colors text-left"
                     >
                       {selectedProperty === property.id ? 'Hide Reviews' : 'View Reviews'}
                     </button>
                     <Link 
                       href={`/property/${property.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-gray-700 hover:text-gray-800 text-sm font-medium transition-colors group"
                     >
                       View Property

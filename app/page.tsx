@@ -77,32 +77,42 @@ export default function ScalableDashboard() {
 
   // Helper functions
   const getReviewCount = (propertyId: number, propertyName?: string) => {
-    // Use propertyName if provided, else fallback to id
-    if (propertyName) {
-      return allReviews.filter((r: any) => r.property === propertyName).length || 0;
+    try {
+      // Use propertyName if provided, else fallback to id
+      if (propertyName) {
+        return allReviews.filter((r: any) => r.property === propertyName).length || 0;
+      }
+      // fallback for legacy usage - find property by id in listings data
+      const propertyObj = listingsData?.result?.find((p: any) => p.id === propertyId);
+      if (!propertyObj) return 0;
+      return allReviews.filter((r: any) => r.property === propertyObj.name).length || 0;
+    } catch (error) {
+      console.error('Error getting review count:', error);
+      return 0;
     }
-    // fallback for legacy usage
-    const propertyObj = filteredAndSortedProperties.find((p: any) => p.id === propertyId);
-    if (!propertyObj) return 0;
-    return allReviews.filter((r: any) => r.property === propertyObj.name).length || 0;
   };
 
   const getAverageRating = (propertyId: number, propertyName?: string) => {
-    if (propertyName) {
-      const reviews = allReviews.filter((r: any) => r.property === propertyName) || [];
+    try {
+      if (propertyName) {
+        const reviews = allReviews.filter((r: any) => r.property === propertyName) || [];
+        if (reviews.length === 0) return null;
+        const ratings = reviews.map((r: any) => r.rating).filter(Boolean);
+        if (ratings.length === 0) return null;
+        return (ratings.reduce((a: any, b: any) => a + b, 0) / ratings.length).toFixed(1);
+      }
+      // fallback for legacy usage - find property by id in listings data
+      const propertyObj = listingsData?.result?.find((p: any) => p.id === propertyId);
+      if (!propertyObj) return null;
+      const reviews = allReviews.filter((r: any) => r.property === propertyObj.name) || [];
       if (reviews.length === 0) return null;
       const ratings = reviews.map((r: any) => r.rating).filter(Boolean);
       if (ratings.length === 0) return null;
       return (ratings.reduce((a: any, b: any) => a + b, 0) / ratings.length).toFixed(1);
+    } catch (error) {
+      console.error('Error getting average rating:', error);
+      return null;
     }
-    // fallback for legacy usage
-    const propertyObj = filteredAndSortedProperties.find((p: any) => p.id === propertyId);
-    if (!propertyObj) return null;
-    const reviews = allReviews.filter((r: any) => r.property === propertyObj.name) || [];
-    if (reviews.length === 0) return null;
-    const ratings = reviews.map((r: any) => r.rating).filter(Boolean);
-    if (ratings.length === 0) return null;
-    return (ratings.reduce((a: any, b: any) => a + b, 0) / ratings.length).toFixed(1);
   };
 
   // Filtered and sorted data with pagination
@@ -157,12 +167,17 @@ export default function ScalableDashboard() {
           bVal = getReviewCount(b.id, b.name);
           break;
         case 'price':
-          aVal = a.price;
-          bVal = b.price;
+          aVal = a.price || 0;
+          bVal = b.price || 0;
           break;
         default:
-          aVal = a.name.toLowerCase();
-          bVal = b.name.toLowerCase();
+          aVal = a.name?.toLowerCase() || '';
+          bVal = b.name?.toLowerCase() || '';
+      }
+      
+      // Debug logging for sorting issues
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Sorting ${sortBy}: ${a.name} (${aVal}) vs ${b.name} (${bVal})`);
       }
       
       if (sortOrder === 'asc') {
@@ -173,7 +188,7 @@ export default function ScalableDashboard() {
     });
 
     return filtered;
-  }, [listingsData?.result, globalSearch, filter, sortBy, sortOrder]);
+  }, [listingsData?.result, globalSearch, filter, sortBy, sortOrder, allReviews]);
 
   // Paginated properties
   const paginatedProperties = useMemo(() => {
@@ -221,7 +236,7 @@ export default function ScalableDashboard() {
       totalReviews,
       avgRating
     };
-  }, [filteredAndSortedProperties]);
+  }, [filteredAndSortedProperties, allReviews]);
 
   // Reset page when filters change
   useEffect(() => {
@@ -233,7 +248,7 @@ export default function ScalableDashboard() {
     setReviewPage(1);
   }, [selectedProperty]);
 
-  const handleSort = (field: typeof sortBy) => {
+  const handleSort = (field: 'name' | 'rating' | 'reviews' | 'price') => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -276,9 +291,6 @@ export default function ScalableDashboard() {
                 <Toolbar
                   viewMode={viewMode}
                   setViewMode={setViewMode}
-                  sortBy={sortBy}
-                  sortOrder={sortOrder}
-                  handleSort={handleSort as (field: string) => void}
                   pageSize={pageSize}
                   setPageSize={setPageSize}
                   currentPage={currentPage}

@@ -48,7 +48,7 @@ export default function PropertiesGrid({ properties, getAverageRating, getReview
                   e.stopPropagation();
                   setSelectedProperty(selectedProperty === property.id ? null : property.id);
                 }}
-                className="text-purple-600 hover:text-purple-700 text-xs font-medium transition-colors"
+                className="text-purple-600 cursor-pointer hover:text-purple-700 text-xs font-medium transition-colors"
               >
                 View Reviews
               </button>
@@ -57,6 +57,8 @@ export default function PropertiesGrid({ properties, getAverageRating, getReview
             {/* Call to Action Button */}
             <Link 
               href={`/property/${property.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-800 text-sm font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 group border border-gray-200"
             >
               View Property
