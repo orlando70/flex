@@ -1,103 +1,397 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useMemo, useEffect } from 'react';
+import Sidebar from '../components/Sidebar';
+import Header from '../components/Header';
+import StatsCards from '../components/StatsCards';
+import Filters from '../components/Filters';
+import Toolbar from '../components/Toolbar';
+import PropertiesGrid from '../components/PropertiesGrid';
+import PropertiesTable from '../components/PropertiesTable';
+import Pagination from '../components/Pagination';
+import ReviewModal from '../components/ReviewModal';
+import AnalyticsView from '../components/AnalyticsView';
+import ReviewsView from '../components/ReviewsView';
+import { useListings } from '../lib/hooks/listings';
+import { useReviews } from '../lib/hooks/reviews';
+
+// Mock data - replace with your actual hooks
+const generateMockListings = (count: number) => {
+  const cities = ['London', 'Manchester', 'Birmingham', 'Glasgow', 'Liverpool', 'Edinburgh', 'Brighton', 'Bristol', 'Cardiff', 'Belfast'];
+  const roomTypes = ['entire_home', 'private_room', 'shared_room'];
+  const names = ['Cozy Downtown Apartment', 'Modern City Loft', 'Seaside Villa', 'Historic Townhouse', 'Garden Studio', 'Penthouse Suite', 'Charming Cottage', 'Urban Flat'];
+  
+  return Array.from({ length: count }, (_, i) => ({
+    id: i + 1,
+    name: `${names[i % names.length]} ${i + 1}`,
+    city: cities[i % cities.length],
+    countryCode: 'UK',
+    roomType: roomTypes[i % roomTypes.length],
+    personCapacity: Math.floor(Math.random() * 8) + 1,
+    bedroomsNumber: Math.floor(Math.random() * 4) + 1,
+    bathroomsNumber: Math.floor(Math.random() * 3) + 1,
+    price: Math.floor(Math.random() * 300) + 50
+  }));
+};
+
+const generateMockReviews = (listings: any[], reviewsPerListing: number): Review[] => {
+  const guests = ['John Smith', 'Sarah Johnson', 'Mike Wilson', 'Emma Davis', 'James Brown', 'Lisa Anderson', 'David Miller', 'Amy Taylor'];
+  const comments = ['Amazing stay!', 'Great location', 'Perfect for families', 'Clean and comfortable', 'Excellent host', 'Would recommend', 'Beautiful property', 'Outstanding service'];
+  const categories = ['cleanliness', 'communication', 'respect_house_rules'];
+  
+  const reviews: Review[] = [];
+  listings.forEach((listing, listingIndex) => {
+    const numReviews = Math.floor(Math.random() * reviewsPerListing) + 1;
+    for (let i = 0; i < numReviews; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - Math.floor(Math.random() * 365));
+      
+      reviews.push({
+        id: listingIndex * reviewsPerListing + i + 1,
+        property: listing.name,
+        guest: guests[Math.floor(Math.random() * guests.length)],
+        date: date.toISOString().split('T')[0],
+        comment: comments[Math.floor(Math.random() * comments.length)],
+        is_hidden: Math.random() > 0.3,
+        rating: Math.floor(Math.random() * 3) + 8,
+        reviewCategory: categories.map(cat => ({
+          category: cat,
+          rating: Math.floor(Math.random() * 3) + 8
+        })),
+        channel: 'Airbnb',
+        hasCategories: true,
+        categoryCount: 3
+      });
+    }
+  });
+  
+  return reviews;
+};
+
+// Generate large dataset for demonstration
+const mockListings = generateMockListings(500); // 500 properties
+
+// Types
+interface ReviewCategory {
+  category: string;
+  rating: number;
+}
+interface Review {
+  id: number;
+  type?: string;
+  status?: string;
+  rating: number;
+  privateFeedback?: string | null;
+  reviewCategory?: ReviewCategory[];
+  property: string;
+  guest: string;
+  comment: string;
+  channel?: string;
+  date: string;
+  is_hidden?: boolean;
+  hasCategories?: boolean;
+  categoryCount?: number;
+}
+
+export default function ScalableDashboard() {
+  // Fetch listings from API
+  const { data: listingsData, isLoading: listingsLoading, error: listingsError } = useListings();
+  // Fetch reviews from API
+  const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useReviews();
+
+  // Use API reviews everywhere
+  const allReviews = reviewsData?.result || [];
+
+  // UI State
+  const [activeView, setActiveView] = useState('overview');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(24);
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'rating' | 'reviews' | 'price'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  
+  // Filter State
+  const [filter, setFilter] = useState({
+    rating: '',
+    category: '',
+    startDate: '',
+    endDate: '',
+    city: '',
+    roomType: '',
+    priceMin: '',
+    priceMax: ''
+  });
+
+  // Review Management
+  const [selectedProperty, setSelectedProperty] = useState<number | null>(null);
+  const [reviewSearch, setReviewSearch] = useState('');
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewPageSize] = useState(50);
+
+  // Helper functions
+  const getReviewCount = (propertyId: number, propertyName?: string) => {
+    // Use propertyName if provided, else fallback to id
+    if (propertyName) {
+      return allReviews.filter((r: any) => r.property === propertyName).length || 0;
+    }
+    // fallback for legacy usage
+    const propertyObj = filteredAndSortedProperties.find((p: any) => p.id === propertyId);
+    if (!propertyObj) return 0;
+    return allReviews.filter((r: any) => r.property === propertyObj.name).length || 0;
+  };
+
+  const getAverageRating = (propertyId: number, propertyName?: string) => {
+    if (propertyName) {
+      const reviews = allReviews.filter((r: any) => r.property === propertyName) || [];
+      if (reviews.length === 0) return null;
+      const ratings = reviews.map((r: any) => r.rating).filter(Boolean);
+      if (ratings.length === 0) return null;
+      return (ratings.reduce((a: any, b: any) => a + b, 0) / ratings.length).toFixed(1);
+    }
+    // fallback for legacy usage
+    const propertyObj = filteredAndSortedProperties.find((p: any) => p.id === propertyId);
+    if (!propertyObj) return null;
+    const reviews = allReviews.filter((r: any) => r.property === propertyObj.name) || [];
+    if (reviews.length === 0) return null;
+    const ratings = reviews.map((r: any) => r.rating).filter(Boolean);
+    if (ratings.length === 0) return null;
+    return (ratings.reduce((a: any, b: any) => a + b, 0) / ratings.length).toFixed(1);
+  };
+
+  // Filtered and sorted data with pagination
+  const filteredAndSortedProperties = useMemo(() => {
+    let filtered = listingsData?.result || [];
+
+    // Global search
+    if (globalSearch) {
+      filtered = filtered.filter((property: any) =>
+        property.name.toLowerCase().includes(globalSearch.toLowerCase()) ||
+        property.city.toLowerCase().includes(globalSearch.toLowerCase())
+      );
+    }
+
+    // Apply filters
+    if (filter.rating) {
+      filtered = filtered.filter((property: any) => {
+        const avg = getAverageRating(property.id, property.name);
+        return avg && Number(avg) >= Number(filter.rating);
+      });
+    }
+    
+    if (filter.city) {
+      filtered = filtered.filter((property: any) => 
+        property.city.toLowerCase().includes(filter.city.toLowerCase())
+      );
+    }
+    
+    if (filter.roomType) {
+      filtered = filtered.filter((property: any) => property.roomType === filter.roomType);
+    }
+    
+    if (filter.priceMin) {
+      filtered = filtered.filter((property: any) => property.price >= Number(filter.priceMin));
+    }
+    
+    if (filter.priceMax) {
+      filtered = filtered.filter((property: any) => property.price <= Number(filter.priceMax));
+    }
+
+    // Sorting
+    filtered.sort((a: any, b: any) => {
+      let aVal, bVal;
+      
+      switch (sortBy) {
+        case 'rating':
+          aVal = Number(getAverageRating(a.id, a.name)) || 0;
+          bVal = Number(getAverageRating(b.id, b.name)) || 0;
+          break;
+        case 'reviews':
+          aVal = getReviewCount(a.id, a.name);
+          bVal = getReviewCount(b.id, b.name);
+          break;
+        case 'price':
+          aVal = a.price;
+          bVal = b.price;
+          break;
+        default:
+          aVal = a.name.toLowerCase();
+          bVal = b.name.toLowerCase();
+      }
+      
+      if (sortOrder === 'asc') {
+        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      } else {
+        return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+      }
+    });
+
+    return filtered;
+  }, [listingsData?.result, globalSearch, filter, sortBy, sortOrder]);
+
+  // Paginated properties
+  const paginatedProperties = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredAndSortedProperties.slice(startIndex, startIndex + pageSize);
+  }, [filteredAndSortedProperties, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(filteredAndSortedProperties.length / pageSize);
+
+  // Property reviews with pagination
+  const propertyReviews = useMemo(() => {
+    if (!selectedProperty) return [];
+    const selectedPropertyObj = filteredAndSortedProperties.find((p: any) => p.id === selectedProperty);
+    if (!selectedPropertyObj) return [];
+    let reviews = allReviews.filter((r: any) => r.property === selectedPropertyObj.name) || [];
+    if (reviewSearch) {
+      reviews = reviews.filter((r: any) =>
+        r.guest.toLowerCase().includes(reviewSearch.toLowerCase()) ||
+        r.comment.toLowerCase().includes(reviewSearch.toLowerCase())
+      );
+    }
+    return reviews.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [selectedProperty, allReviews, reviewSearch, filteredAndSortedProperties]);
+
+  const paginatedReviews = useMemo(() => {
+    const startIndex = (reviewPage - 1) * reviewPageSize;
+    return propertyReviews.slice(startIndex, startIndex + reviewPageSize);
+  }, [propertyReviews, reviewPage, reviewPageSize]);
+
+  const totalReviewPages = Math.ceil(propertyReviews.length / reviewPageSize);
+
+  // Stats calculations
+  const stats = useMemo(() => {
+    const totalRevenue = filteredAndSortedProperties.reduce((sum: number, prop: any) => sum + (prop.price * getReviewCount(prop.id, prop.name)), 0);
+    const totalReviews = filteredAndSortedProperties.reduce((sum: number, prop: any) => sum + getReviewCount(prop.id, prop.name), 0);
+    const ratingsSum = filteredAndSortedProperties.reduce((sum: number, prop: any) => {
+      const rating = getAverageRating(prop.id, prop.name);
+      return sum + (rating ? Number(rating) : 0);
+    }, 0);
+    const avgRating = filteredAndSortedProperties.length > 0 ? (ratingsSum / filteredAndSortedProperties.length).toFixed(1) : '0';
+    
+    return {
+      totalRevenue,
+      totalProperties: filteredAndSortedProperties.length,
+      totalReviews,
+      avgRating
+    };
+  }, [filteredAndSortedProperties]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, globalSearch, sortBy, sortOrder]);
+
+  // Reset review page when property changes
+  useEffect(() => {
+    setReviewPage(1);
+  }, [selectedProperty]);
+
+  const handleSort = (field: typeof sortBy) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const clearFilters = () => {
+    setFilter({
+      rating: '',
+      category: '',
+      startDate: '',
+      endDate: '',
+      city: '',
+      roomType: '',
+      priceMin: '',
+      priceMax: ''
+    });
+    setGlobalSearch('');
+    setCurrentPage(1);
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <Sidebar activeView={activeView} setActiveView={setActiveView} stats={stats} />
+      {/* Main Content */}
+      <div className="flex-1 overflow-hidden flex flex-col ml-64">
+        {/* Header */}
+        <Header activeView={activeView} globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} />
+        {/* Content Area */}
+        <div className="flex-1 overflow-auto">
+          <div className="p-8">
+            {/* Revenue Header */}
+            
+            {activeView === 'reviews' && (
+              <>
+                <Filters filter={filter} setFilter={setFilter} clearFilters={clearFilters} />
+                <Toolbar
+                  viewMode={viewMode}
+                  setViewMode={setViewMode}
+                  sortBy={sortBy}
+                  sortOrder={sortOrder}
+                  handleSort={handleSort as (field: string) => void}
+                  pageSize={pageSize}
+                  setPageSize={setPageSize}
+                  currentPage={currentPage}
+                  setCurrentPage={setCurrentPage}
+                  filteredLength={filteredAndSortedProperties.length}
+                />
+                {listingsLoading && (
+                  <div className="flex items-center justify-center py-20">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                  </div>
+                )}
+                {listingsError && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                    <p className="text-red-800">Error fetching data. Check the console for details.</p>
+                  </div>
+                )}
+                {viewMode === 'grid' ? (
+                  <PropertiesGrid
+                    properties={paginatedProperties}
+                    getAverageRating={getAverageRating}
+                    getReviewCount={getReviewCount}
+                    selectedProperty={selectedProperty}
+                    setSelectedProperty={setSelectedProperty}
+                  />
+                ) : (
+                  <PropertiesTable
+                    properties={paginatedProperties}
+                    getAverageRating={getAverageRating}
+                    getReviewCount={getReviewCount}
+                    selectedProperty={selectedProperty}
+                    setSelectedProperty={setSelectedProperty}
+                  />
+                )}
+                <Pagination
+                  currentPage={currentPage}
+                  setCurrentPage={setCurrentPage}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  filteredLength={filteredAndSortedProperties.length}
+                />
+                <ReviewModal
+                  selectedProperty={selectedProperty}
+                  setSelectedProperty={setSelectedProperty}
+                  listingsData={listingsData}
+                  propertyReviews={propertyReviews}
+                  paginatedReviews={paginatedReviews}
+                  reviewSearch={reviewSearch}
+                  setReviewSearch={setReviewSearch}
+                  reviewPage={reviewPage}
+                  setReviewPage={setReviewPage}
+                  totalReviewPages={totalReviewPages}
+                  reviewPageSize={reviewPageSize}
+                />
+              </>
+            )}
+            {activeView === 'overview' && <AnalyticsView reviews={allReviews.length > 0 ? allReviews : undefined} />}
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
     </div>
   );
 }
