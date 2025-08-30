@@ -13,63 +13,9 @@ import ReviewModal from '../components/ReviewModal';
 import AnalyticsView from '../components/AnalyticsView';
 import ReviewsView from '../components/ReviewsView';
 import { useListings } from '../lib/hooks/listings';
-import { useReviews } from '../lib/hooks/reviews';
+import { useAllReviews } from '../lib/hooks/reviews';
 
-// Mock data - replace with your actual hooks
-const generateMockListings = (count: number) => {
-  const cities = ['London', 'Manchester', 'Birmingham', 'Glasgow', 'Liverpool', 'Edinburgh', 'Brighton', 'Bristol', 'Cardiff', 'Belfast'];
-  const roomTypes = ['entire_home', 'private_room', 'shared_room'];
-  const names = ['Cozy Downtown Apartment', 'Modern City Loft', 'Seaside Villa', 'Historic Townhouse', 'Garden Studio', 'Penthouse Suite', 'Charming Cottage', 'Urban Flat'];
-  
-  return Array.from({ length: count }, (_, i) => ({
-    id: i + 1,
-    name: `${names[i % names.length]} ${i + 1}`,
-    city: cities[i % cities.length],
-    countryCode: 'UK',
-    roomType: roomTypes[i % roomTypes.length],
-    personCapacity: Math.floor(Math.random() * 8) + 1,
-    bedroomsNumber: Math.floor(Math.random() * 4) + 1,
-    bathroomsNumber: Math.floor(Math.random() * 3) + 1,
-    price: Math.floor(Math.random() * 300) + 50
-  }));
-};
 
-const generateMockReviews = (listings: any[], reviewsPerListing: number): Review[] => {
-  const guests = ['John Smith', 'Sarah Johnson', 'Mike Wilson', 'Emma Davis', 'James Brown', 'Lisa Anderson', 'David Miller', 'Amy Taylor'];
-  const comments = ['Amazing stay!', 'Great location', 'Perfect for families', 'Clean and comfortable', 'Excellent host', 'Would recommend', 'Beautiful property', 'Outstanding service'];
-  const categories = ['cleanliness', 'communication', 'respect_house_rules'];
-  
-  const reviews: Review[] = [];
-  listings.forEach((listing, listingIndex) => {
-    const numReviews = Math.floor(Math.random() * reviewsPerListing) + 1;
-    for (let i = 0; i < numReviews; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - Math.floor(Math.random() * 365));
-      
-      reviews.push({
-        id: listingIndex * reviewsPerListing + i + 1,
-        property: listing.name,
-        guest: guests[Math.floor(Math.random() * guests.length)],
-        date: date.toISOString().split('T')[0],
-        comment: comments[Math.floor(Math.random() * comments.length)],
-        is_hidden: Math.random() > 0.3,
-        rating: Math.floor(Math.random() * 3) + 8,
-        reviewCategory: categories.map(cat => ({
-          category: cat,
-          rating: Math.floor(Math.random() * 3) + 8
-        })),
-        channel: 'Airbnb',
-        hasCategories: true,
-        categoryCount: 3
-      });
-    }
-  });
-  
-  return reviews;
-};
-
-// Generate large dataset for demonstration
-const mockListings = generateMockListings(500); // 500 properties
 
 // Types
 interface ReviewCategory {
@@ -97,7 +43,7 @@ export default function ScalableDashboard() {
   // Fetch listings from API
   const { data: listingsData, isLoading: listingsLoading, error: listingsError } = useListings();
   // Fetch reviews from API
-  const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useReviews();
+  const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useAllReviews();
 
   // Use API reviews everywhere
   const allReviews = reviewsData?.result || [];

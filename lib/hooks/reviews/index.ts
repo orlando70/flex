@@ -58,7 +58,7 @@ export function usePatchReview() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['reviews', 'all'] });
       queryClient.invalidateQueries({ queryKey: ['listings'] });
     }
   });

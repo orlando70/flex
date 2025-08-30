@@ -109,7 +109,6 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   await connectMongo();
-  // Expect payload: { review: { hostaway_review_id, is_hidden } }
   const { review } = await request.json();
   const { hostaway_review_id, is_hidden } = review;
   let updatedReview = await Review.findOneAndUpdate(

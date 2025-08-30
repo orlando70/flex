@@ -216,7 +216,7 @@ export default function ModernAnalyticsView({ reviews = mockReviews }: { reviews
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Analytics Intelligence
+              Analytics
             </h1>
             <p className="text-gray-600 mt-2">Real-time insights and performance metrics</p>
           </div>

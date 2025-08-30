@@ -1,6 +1,7 @@
-import { Search, Star, Eye, EyeOff, MessageSquare } from 'lucide-react';
+import { Search, Star, Eye, EyeOff, MessageSquare, CheckCircle, AlertCircle, Filter } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePatchReview } from '@/lib/hooks/reviews';
+import { useState } from 'react';
 
 interface ReviewModalProps {
   selectedProperty: number | null;
@@ -18,8 +19,18 @@ interface ReviewModalProps {
 
 export default function ReviewModal({ selectedProperty, setSelectedProperty, listingsData, propertyReviews, paginatedReviews, reviewSearch, setReviewSearch, reviewPage, setReviewPage, totalReviewPages, reviewPageSize }: ReviewModalProps) {
   const patchReviewMutation = usePatchReview();
+  const [showHiddenReviews, setShowHiddenReviews] = useState(true);
 
   if (!selectedProperty) return null;
+
+  // Filter reviews based on visibility preference
+  const filteredReviews = showHiddenReviews 
+    ? paginatedReviews 
+    : paginatedReviews.filter(review => !review.is_hidden);
+
+  const hiddenCount = propertyReviews.filter(review => review.is_hidden).length;
+  const visibleCount = propertyReviews.filter(review => !review.is_hidden).length;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl max-h-[80vh] flex flex-col">
@@ -28,9 +39,11 @@ export default function ReviewModal({ selectedProperty, setSelectedProperty, lis
             <h2 className="text-xl font-semibold text-gray-900">
               Reviews for {listingsData.result.find((p: any) => p.id === selectedProperty)?.name}
             </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              {propertyReviews.length} total reviews
-            </p>
+            <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+              <span>{propertyReviews.length} total reviews</span>
+              <span className="text-green-600">• {visibleCount} visible</span>
+              <span className="text-gray-500">• {hiddenCount} hidden</span>
+            </div>
           </div>
           <button
             onClick={() => setSelectedProperty(null)}
@@ -39,7 +52,9 @@ export default function ReviewModal({ selectedProperty, setSelectedProperty, lis
             ✕
           </button>
         </div>
-        <div className="p-6 border-b border-gray-200">
+        
+        <div className="p-6 border-b border-gray-200 space-y-4">
+          {/* Search and Filter Controls */}
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
@@ -49,56 +64,130 @@ export default function ReviewModal({ selectedProperty, setSelectedProperty, lis
               onChange={(e) => setReviewSearch(e.target.value)}
             />
           </div>
+          
+          {/* Visibility Filter Toggle */}
+          <div className="flex items-center gap-3">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={showHiddenReviews}
+                onChange={(e) => setShowHiddenReviews(e.target.checked)}
+                className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              />
+              Show hidden reviews
+            </label>
+            {!showHiddenReviews && (
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                Showing only visible reviews
+              </span>
+            )}
+          </div>
         </div>
+
         <div className="flex-1 overflow-auto p-6">
           <div className="space-y-4">
-            {paginatedReviews.map((review: any) => (
-              <div key={review.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            {filteredReviews.map((review: any) => (
+              <div key={review.id} className={`rounded-lg p-4 border transition-all duration-200 ${
+                review.is_hidden 
+                  ? 'bg-gray-100 border-gray-300 opacity-75' 
+                  : 'bg-white border-gray-200 shadow-sm'
+              }`}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="font-medium text-gray-900">{review.guest}</span>
+                      <span className={`font-medium ${review.is_hidden ? 'text-gray-500' : 'text-gray-900'}`}>
+                        {review.guest}
+                      </span>
                       <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-sm font-medium">{review.rating}</span>
+                        <Star className={`w-4 h-4 ${review.is_hidden ? 'text-gray-400' : 'text-yellow-400'} fill-current`} />
+                        <span className={`text-sm font-medium ${review.is_hidden ? 'text-gray-500' : 'text-gray-900'}`}>
+                          {review.rating}
+                        </span>
                       </div>
                       <span className="text-xs text-gray-500">
                         {new Date(review.date).toLocaleDateString()}
                       </span>
+                      {/* Status Badge */}
+                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                        review.is_hidden 
+                          ? 'bg-gray-200 text-gray-600' 
+                          : 'bg-green-100 text-green-700'
+                      }`}>
+                        {review.is_hidden ? (
+                          <>
+                            <AlertCircle className="w-3 h-3" />
+                            Hidden
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-3 h-3" />
+                            Visible
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-gray-700 mb-3">{review.comment}</p>
+                    <p className={`mb-3 ${review.is_hidden ? 'text-gray-500' : 'text-gray-700'}`}>
+                      {review.comment}
+                    </p>
                     {review.reviewCategory && review.reviewCategory.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {review.reviewCategory.map((cat: any, idx: number) => (
-                          <div key={idx} className="bg-white px-2 py-1 rounded text-xs border">
-                            <span className="text-gray-600 capitalize">{cat.category.replace('_', ' ')}: </span>
+                          <div key={idx} className={`px-2 py-1 rounded text-xs border ${
+                            review.is_hidden 
+                              ? 'bg-gray-200 border-gray-300 text-gray-500' 
+                              : 'bg-white border-gray-200 text-gray-600'
+                          }`}>
+                            <span className="capitalize">{cat.category.replace('_', ' ')}: </span>
                             <span className="font-medium">{cat.rating}/10</span>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <button
-                      onClick={() => patchReviewMutation.mutate({ hostaway_review_id: review.id, is_hidden: !review.is_hidden })}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                        !review.is_hidden 
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                      disabled={patchReviewMutation.isPending}
-                    >
-                      {!review.is_hidden ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                      {!review.is_hidden ? 'Published' : 'Hidden'}
-                    </button>
+                  <div className="flex items-center gap-3 ml-4">
+                    {/* Toggle Switch */}
+                    <div className="flex flex-col items-center gap-2">
+                      <label className="text-xs font-medium text-gray-600">
+                        {review.is_hidden ? 'Hidden' : 'Visible'}
+                      </label>
+                      <button
+                        onClick={() => patchReviewMutation.mutate({ 
+                          hostaway_review_id: review.id, 
+                          is_hidden: !review.is_hidden 
+                        })}
+                        disabled={patchReviewMutation.isPending}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                          review.is_hidden 
+                            ? 'bg-gray-300' 
+                            : 'bg-green-500'
+                        } ${patchReviewMutation.isPending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            review.is_hidden ? 'translate-x-1' : 'translate-x-6'
+                          }`}
+                        />
+                      </button>
+                      <span className="text-xs text-gray-500">
+                        {review.is_hidden ? 'Click to show' : 'Click to hide'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
-            {paginatedReviews.length === 0 && (
+            {filteredReviews.length === 0 && (
               <div className="text-center py-12">
                 <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No reviews found.</p>
+                <p className="text-gray-500">
+                  {showHiddenReviews ? 'No reviews found.' : 'No visible reviews found.'}
+                </p>
+                {!showHiddenReviews && (
+                  <p className="text-sm text-gray-400 mt-2">
+                    Try enabling "Show hidden reviews" to see all reviews
+                  </p>
+                )}
               </div>
             )}
           </div>

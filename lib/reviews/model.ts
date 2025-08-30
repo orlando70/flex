@@ -1,7 +1,16 @@
 // models/ReviewState.ts
 import mongoose from 'mongoose';
 
-const reviewStateSchema = new mongoose.Schema({
+interface IReviewState {
+  hostaway_review_id: number;
+  is_hidden: boolean;
+  reason?: string;
+  notes?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const reviewStateSchema = new mongoose.Schema<IReviewState>({
   hostaway_review_id: { 
     type: Number, 
     required: true, 
@@ -22,7 +31,7 @@ const reviewStateSchema = new mongoose.Schema({
 // Indexes for performance
 reviewStateSchema.index({ hostaway_review_id: 1, is_hidden: 1 });
 
-export const Review = mongoose.model('ReviewState', reviewStateSchema);
+export const Review = (mongoose.models.ReviewState || mongoose.model<IReviewState>('ReviewState', reviewStateSchema)) as mongoose.Model<IReviewState>;
 
 
 export async function connectMongo() {

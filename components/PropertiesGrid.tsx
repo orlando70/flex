@@ -51,7 +51,7 @@ export default function PropertiesGrid({ properties, getAverageRating, getReview
                 }}
                 className="text-purple-600 hover:text-purple-700 text-xs font-medium transition-colors"
               >
-                {selectedProperty === property.id ? 'Hide' : 'Reviews'}
+                View Reviews
               </button>
             </div>
           </div>
