@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, UseMutationOptions } from '@tanstack/react-query';
 
 export interface NormalizedReview {
   id: number;
